@@ -1,4 +1,5 @@
 #include "../include/shell.h"
+#include "../include/kprintf.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -15,7 +16,7 @@ static size_t buffer_pos = 0;
 static void shell_prompt(void)
 {
     terminal_setcolor(0x0A); /* light green */
-    terminal_writestring("AshOS> ");
+    kprintf("AshOS> ");
     terminal_setcolor(0x07); /* light grey */
 }
 
@@ -39,12 +40,12 @@ static int strncmp(const char* a, const char* b, size_t n)
 static void cmd_help(void)
 {
     terminal_setcolor(0x0B); /* light cyan */
-    terminal_writestring("\nAvailable commands:\n");
+    kprintf("\nAvailable commands:\n");
     terminal_setcolor(0x07);
-    terminal_writestring("  help     - show this message\n");
-    terminal_writestring("  clear    - clear the screen\n");
-    terminal_writestring("  version  - show OS version\n");
-    terminal_writestring("  echo     - print text back\n");
+    kprintf("  help     - show this message\n");
+    kprintf("  clear    - clear the screen\n");
+    kprintf("  version  - show OS version\n");
+    kprintf("  echo     - print text back\n");
 }
 
 static void cmd_clear(void)
@@ -55,16 +56,14 @@ static void cmd_clear(void)
 static void cmd_version(void)
 {
     terminal_setcolor(0x0B);
-    terminal_writestring("\n" VERSION "\n");
+    kprintf("\n%s\n", VERSION);
     terminal_setcolor(0x07);
-    terminal_writestring("Built from scratch.\n");
+    kprintf("Built from scratch.\n");
 }
 
 static void cmd_echo(const char* args)
 {
-    terminal_putchar('\n');
-    terminal_writestring(args);
-    terminal_putchar('\n');
+    kprintf("\n%s\n", args);
 }
 
 /* ============================================================
@@ -73,7 +72,7 @@ static void cmd_echo(const char* args)
 
 static void shell_execute(void)
 {
-    terminal_putchar('\n');
+    kprintf("\n");
 
     if (buffer_pos == 0) {
         shell_prompt();
@@ -90,10 +89,8 @@ static void shell_execute(void)
         cmd_echo(buffer + 5);
     } else {
         terminal_setcolor(0x04); /* red */
-        terminal_writestring("Unknown command: ");
+        kprintf("Unknown command: %s\n", buffer);
         terminal_setcolor(0x07);
-        terminal_writestring(buffer);
-        terminal_putchar('\n');
     }
 
     buffer_pos = 0;

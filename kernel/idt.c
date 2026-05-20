@@ -1,5 +1,6 @@
 #include "../include/idt.h"
 #include "../include/keyboard.h"
+#include "../include/kprintf.h"
 #include <stdint.h>
 
 static const char* exception_names[] = {
@@ -167,15 +168,13 @@ void idt_init(void)
     __asm__ volatile ("sti");
 }
 
-void isr_handler(registers_t* regs) {
+void isr_handler(registers_t* regs)
+{
     terminal_setcolor(0x04);
-    terminal_writestring("\n*** KERNEL EXCEPTION ***\n");
-    terminal_writestring("Exception: ");
-    if (regs->int_no < 32)
-        terminal_writestring(exception_names[regs->int_no]);
-    terminal_writestring("\nError code: ");
-    terminal_writeuint(regs->err_code);
-    terminal_writestring("\nSystem halted.\n");
+    kprintf("\n*** KERNEL EXCEPTION ***\n");
+    kprintf("Exception: %s\n", exception_names[regs->int_no]);
+    kprintf("Error code: %d\n", regs->err_code);
+    kprintf("System halted.\n");
     __asm__ volatile ("cli; hlt");
 }
 

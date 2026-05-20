@@ -5,6 +5,7 @@
 #include "../include/idt.h"
 #include "../include/keyboard.h"
 #include "../include/shell.h"
+#include "../include/kprintf.h"
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
 #endif
@@ -203,25 +204,19 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
 
     if (magic != MULTIBOOT_MAGIC) {
         terminal_setcolor(vga_entry_color(VGA_COLOR_RED, VGA_COLOR_BLACK));
-        terminal_writestring("ERROR: Not loaded by a multiboot bootloader!\n");
+        kprintf("ERROR: Not loaded by a multiboot bootloader!\n");
         return;
     }
 
     terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    terminal_writestring("=== AshOS V200526.3 ===\n");
+    kprintf("=== AshOS V200526.3 ===\n");
     terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
-    terminal_writestring("Booted successfully via GRUB.\n\n");
+    kprintf("Booted successfully via GRUB.\n\n");
 
-    if (mb_info->flags & 0x1) {
-        terminal_writestring("Lower memory: ");
-        terminal_writeuint(mb_info->mem_lower);
-        terminal_writestring(" KB\n");
-        terminal_writestring("Upper memory: ");
-        terminal_writeuint(mb_info->mem_upper);
-        terminal_writestring(" KB\n");
-    }
+    kprintf("Lower memory: %d KB\n", mb_info->mem_lower);
+    kprintf("Upper memory: %d KB\n", mb_info->mem_upper);
 
-    terminal_writestring("\nHello, kernel world!\n");
+    kprintf("\nHello, kernel world!\n");
 
     shell_init();
 
