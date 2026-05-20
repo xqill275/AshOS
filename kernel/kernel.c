@@ -6,6 +6,7 @@
 #include "../include/keyboard.h"
 #include "../include/shell.h"
 #include "../include/kprintf.h"
+#include "../include/pmm.h"
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
 #endif
@@ -199,6 +200,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     gdt_init();
     terminal_initialize();
     idt_init();
+    pmm_init(mb_info->mem_upper);
     keyboard_init();
     //__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)0xFE), "Nd"((uint16_t)0x21));
 
@@ -209,7 +211,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     }
 
     terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    kprintf("=== AshOS V200526.3 ===\n");
+    kprintf("=== AshOS ===\n");
     terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
     kprintf("Booted successfully via GRUB.\n\n");
 

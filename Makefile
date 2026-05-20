@@ -16,7 +16,8 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/idt_asm.o \
        $(BUILD_DIR)/keyboard.o \
        $(BUILD_DIR)/shell.o \
-       $(BUILD_DIR)/kprintf.o
+       $(BUILD_DIR)/kprintf.o \
+       $(BUILD_DIR)/pmm.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -49,6 +50,9 @@ $(BUILD_DIR)/shell.o: $(KERNEL_DIR)/shell.c
 
 $(BUILD_DIR)/kprintf.o: $(KERNEL_DIR)/kprintf.c
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/kprintf.c -o $(BUILD_DIR)/kprintf.o
+
+$(BUILD_DIR)/pmm.o: $(KERNEL_DIR)/pmm.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/pmm.c -o $(BUILD_DIR)/pmm.o
 
 $(TARGET): $(OBJS) linker.ld
 	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc

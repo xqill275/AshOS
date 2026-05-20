@@ -1,5 +1,6 @@
 #include "../include/shell.h"
 #include "../include/kprintf.h"
+#include "../include/pmm.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -8,7 +9,7 @@ extern void terminal_writestring(const char* str);
 extern void terminal_setcolor(uint8_t color);
 extern void terminal_initialize(void);
 
-#define VERSION "AshOS V200526"
+#define VERSION "AshOS V210526"
 
 static char buffer[SHELL_BUFFER_SIZE];
 static size_t buffer_pos = 0;
@@ -46,6 +47,7 @@ static void cmd_help(void)
     kprintf("  clear    - clear the screen\n");
     kprintf("  version  - show OS version\n");
     kprintf("  echo     - print text back\n");
+    kprintf("  meminfo  - show memory usage\n");
 }
 
 static void cmd_clear(void)
@@ -64,6 +66,13 @@ static void cmd_version(void)
 static void cmd_echo(const char* args)
 {
     kprintf("\n%s\n", args);
+}
+
+static void cmd_meminfo(void)
+{
+    kprintf("\nTotal pages: %d\n", pmm_free_pages() + 521);
+    kprintf("Free pages:  %d\n", pmm_free_pages());
+    kprintf("Free memory: %d KB\n", pmm_free_pages() * 4);
 }
 
 /* ============================================================
@@ -87,6 +96,8 @@ static void shell_execute(void)
         cmd_version();
     } else if (strncmp(buffer, "echo ", 5) == 0) {
         cmd_echo(buffer + 5);
+    } else if (strcmp(buffer, "meminfo") == 0) {
+        cmd_meminfo();
     } else {
         terminal_setcolor(0x04); /* red */
         kprintf("Unknown command: %s\n", buffer);
