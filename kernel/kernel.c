@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "../include/gdt.h"
 #include "../include/idt.h"
-
+#include "../include/keyboard.h"
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
 #endif
@@ -177,6 +177,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     gdt_init();
     terminal_initialize();
     idt_init();
+    keyboard_init();
     //__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)0xFE), "Nd"((uint16_t)0x21));
 
     if (magic != MULTIBOOT_MAGIC) {

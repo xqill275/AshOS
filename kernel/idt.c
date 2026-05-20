@@ -1,4 +1,5 @@
 #include "../include/idt.h"
+#include "../include/keyboard.h"
 #include <stdint.h>
 
 static const char* exception_names[] = {
@@ -75,7 +76,7 @@ static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags
 static void pic_remap(void)
 {
     /* save masks */
-    uint8_t mask1 = 0xFE;
+    uint8_t mask1 = 0xFC;
     uint8_t mask2 = 0xFF;
 
     /* start initialisation sequence */
@@ -166,8 +167,7 @@ void idt_init(void)
     __asm__ volatile ("sti");
 }
 
-void isr_handler(registers_t* regs)
-{
+void isr_handler(registers_t* regs) {
     terminal_setcolor(0x04);
     terminal_writestring("\n*** KERNEL EXCEPTION ***\n");
     terminal_writestring("Exception: ");
@@ -179,8 +179,9 @@ void isr_handler(registers_t* regs)
     __asm__ volatile ("cli; hlt");
 }
 
-void irq_handler(registers_t* regs)
-{
+void irq_handler(registers_t* regs){
+    if (regs->int_no == 33)
+        keyboard_handler();
 
     if (regs->int_no >= 40)
         outb(PIC2_COMMAND, PIC_EOI);

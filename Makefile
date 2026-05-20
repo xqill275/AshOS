@@ -13,7 +13,8 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/gdt.o \
        $(BUILD_DIR)/gdt_asm.o \
        $(BUILD_DIR)/idt.o \
-       $(BUILD_DIR)/idt_asm.o
+       $(BUILD_DIR)/idt_asm.o \
+       $(BUILD_DIR)/keyboard.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -37,6 +38,9 @@ $(BUILD_DIR)/idt.o: $(KERNEL_DIR)/idt.c
 
 $(BUILD_DIR)/idt_asm.o: $(KERNEL_DIR)/idt.s
 	$(AS) $(KERNEL_DIR)/idt.s -o $(BUILD_DIR)/idt_asm.o
+
+$(BUILD_DIR)/keyboard.o: $(KERNEL_DIR)/keyboard.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/keyboard.c -o $(BUILD_DIR)/keyboard.o
 
 $(TARGET): $(OBJS) linker.ld
 	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
