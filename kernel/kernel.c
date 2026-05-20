@@ -4,6 +4,7 @@
 #include "../include/gdt.h"
 #include "../include/idt.h"
 #include "../include/keyboard.h"
+#include "../include/shell.h"
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
 #endif
@@ -11,6 +12,7 @@
 #if !defined(__i386__)
 #error "This kernel needs to be compiled with an ix86-elf compiler"
 #endif
+
 
 /* ============================================================
    Multiboot
@@ -70,6 +72,23 @@ static size_t    terminal_column;
 static uint8_t   terminal_color;
 static uint16_t* terminal_buffer;
 
+#define VGA_CTRL_PORT 0x3D4
+#define VGA_DATA_PORT 0x3D5
+
+static inline void outb(uint16_t port, uint8_t value)
+{
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
+void terminal_update_cursor(void)
+{
+    uint16_t pos = terminal_row * VGA_WIDTH + terminal_column;
+    outb(VGA_CTRL_PORT, 0x0F);
+    outb(VGA_DATA_PORT, (uint8_t)(pos & 0xFF));
+    outb(VGA_CTRL_PORT, 0x0E);
+    outb(VGA_DATA_PORT, (uint8_t)((pos >> 8) & 0xFF));
+}
+
 void terminal_initialize(void)
 {
     terminal_row    = 0;
@@ -80,6 +99,7 @@ void terminal_initialize(void)
     for (size_t y = 0; y < VGA_HEIGHT; y++)
         for (size_t x = 0; x < VGA_WIDTH; x++)
             terminal_buffer[y * VGA_WIDTH + x] = vga_entry(' ', terminal_color);
+    terminal_update_cursor();
 }
 
 void terminal_setcolor(uint8_t color)
@@ -135,6 +155,7 @@ void terminal_putchar(char c)
             terminal_row = VGA_HEIGHT - 1;
         }
     }
+    terminal_update_cursor();
 }
 
 void terminal_write(const char* data, size_t size)
@@ -201,6 +222,8 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     }
 
     terminal_writestring("\nHello, kernel world!\n");
+
+    shell_init();
 
     /* keep kernel alive for interrupts */
     while (1) __asm__ volatile ("hlt");

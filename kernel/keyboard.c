@@ -1,4 +1,5 @@
 #include "../include/keyboard.h"
+#include "../include/shell.h"
 #include <stdint.h>
 
 extern void terminal_putchar(char c);
@@ -31,7 +32,7 @@ void keyboard_handler(void)
     if (scancode < 58) {
         char c = scancode_table[scancode];
         if (c != 0)
-            terminal_putchar(c);
+            shell_process_char(c);
     }
 }
 
