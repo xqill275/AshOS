@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "../include/gdt.h"
 
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
@@ -209,7 +210,9 @@ void terminal_writeuint(uint32_t n)
  */
 void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
 {
+        gdt_init();
 	terminal_initialize();
+        terminal_writestring("GDT loaded.\n");
 
 	/* Verify we were booted by a Multiboot-compliant bootloader */
 	if (magic != MULTIBOOT_MAGIC) {

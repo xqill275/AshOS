@@ -2,22 +2,45 @@ CC      = i686-elf-gcc
 AS      = i686-elf-as
 CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 
-all: myos.bin
+# Directories
+BOOT_DIR   = boot
+KERNEL_DIR = kernel
+BUILD_DIR  = build
 
-boot.o: boot.s
-	$(AS) boot.s -o boot.o
+# Output binary
+TARGET = $(BUILD_DIR)/myos.bin
 
-kernel.o: kernel.c
-	$(CC) $(CFLAGS) -c kernel.c -o kernel.o
+# Object files
+OBJS = $(BUILD_DIR)/boot.o \
+       $(BUILD_DIR)/kernel.o \
+       $(BUILD_DIR)/gdt.o \
+       $(BUILD_DIR)/gdt_asm.o
 
-myos.bin: boot.o kernel.o linker.ld
-	$(CC) -T linker.ld -o myos.bin -ffreestanding -O2 -nostdlib boot.o kernel.o -lgcc
+all: $(BUILD_DIR) $(TARGET)
 
-# Run in QEMU directly — no disk image needed, QEMU speaks Multiboot natively
-run: myos.bin
-	qemu-system-i386 -kernel myos.bin
+# Create build directory if it doesn't exist
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/boot.o: $(BOOT_DIR)/boot.s
+	$(AS) $(BOOT_DIR)/boot.s -o $(BUILD_DIR)/boot.o
+
+$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/kernel.c -o $(BUILD_DIR)/kernel.o
+
+$(BUILD_DIR)/gdt.o: $(KERNEL_DIR)/gdt.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/gdt.c -o $(BUILD_DIR)/gdt.o
+
+$(BUILD_DIR)/gdt_asm.o: $(KERNEL_DIR)/gdt.s
+	$(AS) $(KERNEL_DIR)/gdt.s -o $(BUILD_DIR)/gdt_asm.o
+
+$(TARGET): $(OBJS) linker.ld
+	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
+
+run: $(TARGET)
+	qemu-system-i386 -kernel $(TARGET)
 
 clean:
-	rm -f *.o myos.bin
+	rm -rf $(BUILD_DIR)
 
 .PHONY: all run clean
