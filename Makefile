@@ -22,7 +22,9 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/vmm.o \
        $(BUILD_DIR)/heap.o \
        $(BUILD_DIR)/process.o \
-       $(BUILD_DIR)/process_asm.o
+       $(BUILD_DIR)/process_asm.o \
+       $(BUILD_DIR)/ata.o \
+       $(BUILD_DIR)/fs.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -71,11 +73,17 @@ $(BUILD_DIR)/process.o: $(KERNEL_DIR)/process.c
 $(BUILD_DIR)/process_asm.o: $(KERNEL_DIR)/process.s
 	$(AS) $(KERNEL_DIR)/process.s -o $(BUILD_DIR)/process_asm.o
 
+$(BUILD_DIR)/ata.o: $(DRIVERS_DIR)/ata.c
+	$(CC) $(CFLAGS) -c $(DRIVERS_DIR)/ata.c -o $(BUILD_DIR)/ata.o
+
+$(BUILD_DIR)/fs.o: $(KERNEL_DIR)/fs.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/fs.c -o $(BUILD_DIR)/fs.o
+
 $(TARGET): $(OBJS) linker.ld
 	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
 
 run: $(TARGET)
-	qemu-system-i386 -kernel $(TARGET)
+	qemu-system-i386 -kernel $(TARGET) -drive file=disk.img,format=raw,index=0,media=disk
 
 clean:
 	rm -rf $(BUILD_DIR)

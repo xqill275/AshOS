@@ -10,7 +10,7 @@ extern void kprintf(const char* fmt, ...);
 process_t* current_process = 0;
 
 /* head of the process list */
-static process_t* process_list = 0;
+process_t* process_list = 0;
 
 /* pid counter */
 static uint32_t next_pid = 0;

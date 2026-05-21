@@ -10,6 +10,8 @@
 #include "../include/vmm.h"
 #include "../include/heap.h"
 #include "../include/process.h"
+#include "../include/ata.h"
+#include "../include/fs.h"
 
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
@@ -210,6 +212,8 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     vmm_init();
     heap_init();
     process_init();
+    ata_init();
+    fs_init();
     keyboard_init();
     //__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)0xFE), "Nd"((uint16_t)0x21));
 

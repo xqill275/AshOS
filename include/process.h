@@ -21,6 +21,8 @@ typedef struct process {
     struct process* next;      /* next process in list */
 } process_t;
 
+
+extern process_t* process_list;
 void     process_init(void);
 process_t* process_create(void (*entry)(void));
 void     process_exit(void);

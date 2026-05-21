@@ -1,6 +1,9 @@
 #include "../include/shell.h"
 #include "../include/kprintf.h"
 #include "../include/pmm.h"
+#include "../include/process.h"
+#include "../include/fs.h"
+#include "../include/heap.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -48,6 +51,12 @@ static void cmd_help(void)
     kprintf("  version  - show OS version\n");
     kprintf("  echo     - print text back\n");
     kprintf("  meminfo  - show memory usage\n");
+    kprintf("  ps       - list processes\n");
+    kprintf("  ls            - list files\n");
+    kprintf("  touch <file>  - create a file\n");
+    kprintf("  write <file>  - write to a file\n");
+    kprintf("  cat <file>    - read a file\n");
+    kprintf("  rm <file>     - delete a file\n");
 }
 
 static void cmd_clear(void)
@@ -75,6 +84,87 @@ static void cmd_meminfo(void)
     kprintf("Free memory: %d KB\n", pmm_free_pages() * 4);
 }
 
+static void cmd_ps(void)
+{
+    kprintf("\nPID\tSTATE\n");
+    kprintf("---\t-----\n");
+
+    process_t* proc = process_list;
+    while (proc) {
+        const char* state;
+        switch (proc->state) {
+            case PROCESS_RUNNING: state = "RUNNING"; break;
+            case PROCESS_READY:   state = "READY";   break;
+            case PROCESS_DEAD:    state = "DEAD";    break;
+            default:              state = "UNKNOWN"; break;
+        }
+        kprintf("%d\t%s\n", proc->pid, state);
+        proc = proc->next;
+    }
+}
+
+static void cmd_ls(void)
+{
+    fs_list();
+}
+
+static void cmd_touch(const char* args)
+{
+    if (args[0] == 0) {
+        kprintf("Usage: touch <filename>\n");
+        return;
+    }
+    fs_create(args);
+}
+
+static void cmd_write(const char* args)
+{
+    const char* space = args;
+    while (*space && *space != ' ') space++;
+    if (*space == 0) {
+        kprintf("Usage: write <filename> <content>\n");
+        return;
+    }
+
+    char name[64];
+    int len = space - args;
+    for (int i = 0; i < len; i++) name[i] = args[i];
+    name[len] = 0;
+
+    const char* content = space + 1;
+
+    /* calculate content length */
+    uint32_t content_len = 0;
+    while (content[content_len]) content_len++;
+
+    fs_write(name, (const uint8_t*)content, content_len);
+}
+
+static void cmd_cat(const char* args)
+{
+    if (args[0] == 0) {
+        kprintf("Usage: cat <filename>\n");
+        return;
+    }
+
+    uint8_t* buf = (uint8_t*)kmalloc(512);
+    int bytes = fs_read(args, buf, 512);
+    if (bytes > 0) {
+        buf[bytes] = 0;
+        kprintf("\n%s\n", (char*)buf);
+    }
+    kfree(buf);
+}
+
+static void cmd_rm(const char* args)
+{
+    if (args[0] == 0) {
+        kprintf("Usage: rm <filename>\n");
+        return;
+    }
+    fs_delete(args);
+}
+
 /* ============================================================
    Command processing
    ============================================================ */
@@ -98,6 +188,18 @@ static void shell_execute(void)
         cmd_echo(buffer + 5);
     } else if (strcmp(buffer, "meminfo") == 0) {
         cmd_meminfo();
+    } else if (strcmp(buffer, "ps") == 0) {
+        cmd_ps(); 
+    } else if (strcmp(buffer, "ls") == 0) {
+        cmd_ls();
+    } else if (strncmp(buffer, "touch ", 6) == 0) {
+        cmd_touch(buffer + 6);
+    } else if (strncmp(buffer, "write ", 6) == 0) {
+        cmd_write(buffer + 6);
+    } else if (strncmp(buffer, "cat ", 4) == 0) {
+        cmd_cat(buffer + 4);
+    } else if (strncmp(buffer, "rm ", 3) == 0) {
+        cmd_rm(buffer + 3);
     } else {
         terminal_setcolor(0x04); /* red */
         kprintf("Unknown command: %s\n", buffer);
