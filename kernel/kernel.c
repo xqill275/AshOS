@@ -9,6 +9,7 @@
 #include "../include/pmm.h"
 #include "../include/vmm.h"
 #include "../include/heap.h"
+#include "../include/process.h"
 
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
@@ -194,6 +195,8 @@ void terminal_writeuint(uint32_t n)
     while (i-- > 0) terminal_putchar(buf[i]);
 }
 
+
+
 /* ============================================================
    Kernel entry
    ============================================================ */
@@ -206,6 +209,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     pmm_init(mb_info->mem_upper);
     vmm_init();
     heap_init();
+    process_init();
     keyboard_init();
     //__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)0xFE), "Nd"((uint16_t)0x21));
 

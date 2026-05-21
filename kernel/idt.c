@@ -1,6 +1,7 @@
 #include "../include/idt.h"
 #include "../include/keyboard.h"
 #include "../include/kprintf.h"
+#include "../include/process.h"
 #include <stdint.h>
 
 static const char* exception_names[] = {
@@ -178,8 +179,12 @@ void isr_handler(registers_t* regs)
     __asm__ volatile ("cli; hlt");
 }
 
-void irq_handler(registers_t* regs){
-    if (regs->int_no == 33)
+void irq_handler(registers_t* regs)
+{
+    if (regs->int_no == 32)  /* timer */
+        scheduler_tick();
+
+    if (regs->int_no == 33)  /* keyboard */
         keyboard_handler();
 
     if (regs->int_no >= 40)

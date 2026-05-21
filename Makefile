@@ -4,6 +4,7 @@ CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 
 BOOT_DIR   = boot
 KERNEL_DIR = kernel
+DRIVERS_DIR = drivers
 BUILD_DIR  = build
 
 TARGET = $(BUILD_DIR)/myos.bin
@@ -19,7 +20,9 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/kprintf.o \
        $(BUILD_DIR)/pmm.o \
        $(BUILD_DIR)/vmm.o \
-       $(BUILD_DIR)/heap.o
+       $(BUILD_DIR)/heap.o \
+       $(BUILD_DIR)/process.o \
+       $(BUILD_DIR)/process_asm.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -44,8 +47,8 @@ $(BUILD_DIR)/idt.o: $(KERNEL_DIR)/idt.c
 $(BUILD_DIR)/idt_asm.o: $(KERNEL_DIR)/idt.s
 	$(AS) $(KERNEL_DIR)/idt.s -o $(BUILD_DIR)/idt_asm.o
 
-$(BUILD_DIR)/keyboard.o: $(KERNEL_DIR)/keyboard.c
-	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/keyboard.c -o $(BUILD_DIR)/keyboard.o
+$(BUILD_DIR)/keyboard.o: $(DRIVERS_DIR)/keyboard.c
+	$(CC) $(CFLAGS) -c $(DRIVERS_DIR)/keyboard.c -o $(BUILD_DIR)/keyboard.o
 
 $(BUILD_DIR)/shell.o: $(KERNEL_DIR)/shell.c
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/shell.c -o $(BUILD_DIR)/shell.o
@@ -61,6 +64,12 @@ $(BUILD_DIR)/vmm.o: $(KERNEL_DIR)/vmm.c
 
 $(BUILD_DIR)/heap.o: $(KERNEL_DIR)/heap.c
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/heap.c -o $(BUILD_DIR)/heap.o
+
+$(BUILD_DIR)/process.o: $(KERNEL_DIR)/process.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/process.c -o $(BUILD_DIR)/process.o
+
+$(BUILD_DIR)/process_asm.o: $(KERNEL_DIR)/process.s
+	$(AS) $(KERNEL_DIR)/process.s -o $(BUILD_DIR)/process_asm.o
 
 $(TARGET): $(OBJS) linker.ld
 	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
