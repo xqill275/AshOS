@@ -2,6 +2,7 @@ CC     = i686-elf-gcc
 AS     = i686-elf-as
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 
+USER_DIR = user
 BOOT_DIR   = boot
 KERNEL_DIR = kernel
 DRIVERS_DIR = drivers
@@ -24,7 +25,11 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/process.o \
        $(BUILD_DIR)/process_asm.o \
        $(BUILD_DIR)/ata.o \
-       $(BUILD_DIR)/fs.o
+       $(BUILD_DIR)/fs.o \
+       $(BUILD_DIR)/syscall.o \
+       $(BUILD_DIR)/tss.o \
+       $(BUILD_DIR)/usermode.o \
+       $(BUILD_DIR)/usertest.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -78,6 +83,18 @@ $(BUILD_DIR)/ata.o: $(DRIVERS_DIR)/ata.c
 
 $(BUILD_DIR)/fs.o: $(KERNEL_DIR)/fs.c
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/fs.c -o $(BUILD_DIR)/fs.o
+
+$(BUILD_DIR)/syscall.o: $(KERNEL_DIR)/syscall.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/syscall.c -o $(BUILD_DIR)/syscall.o
+
+$(BUILD_DIR)/tss.o: $(KERNEL_DIR)/tss.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/tss.c -o $(BUILD_DIR)/tss.o
+
+$(BUILD_DIR)/usermode.o: $(KERNEL_DIR)/usermode.c
+	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/usermode.c -o $(BUILD_DIR)/usermode.o
+
+$(BUILD_DIR)/usertest.o: $(USER_DIR)/usertest.c
+	$(CC) $(CFLAGS) -c $(USER_DIR)/usertest.c -o $(BUILD_DIR)/usertest.o
 
 $(TARGET): $(OBJS) linker.ld
 	$(CC) -T linker.ld -o $(TARGET) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc

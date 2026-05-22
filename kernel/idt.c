@@ -2,6 +2,7 @@
 #include "../include/keyboard.h"
 #include "../include/kprintf.h"
 #include "../include/process.h"
+#include "../include/syscall.h"
 #include <stdint.h>
 
 static const char* exception_names[] = {
@@ -37,7 +38,7 @@ extern void isr18(void); extern void isr19(void); extern void isr20(void);
 extern void isr21(void); extern void isr22(void); extern void isr23(void);
 extern void isr24(void); extern void isr25(void); extern void isr26(void);
 extern void isr27(void); extern void isr28(void); extern void isr29(void);
-extern void isr30(void); extern void isr31(void);
+extern void isr30(void); extern void isr31(void); extern void isr128(void);
 
 extern void irq0(void);  extern void irq1(void);  extern void irq2(void);
 extern void irq3(void);  extern void irq4(void);  extern void irq5(void);
@@ -141,6 +142,9 @@ void idt_init(void)
     idt_set_gate(30, (uint32_t)isr30, 0x08, 0x8E);
     idt_set_gate(31, (uint32_t)isr31, 0x08, 0x8E);
 
+    /* system call handler - ring 3 can call this */
+    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE);
+
     /* remap PIC */
     pic_remap();
 
@@ -171,6 +175,11 @@ void idt_init(void)
 
 void isr_handler(registers_t* regs)
 {
+    if (regs->int_no == 128) {
+        syscall_handler(regs);
+        return;
+    }
+
     terminal_setcolor(0x04);
     kprintf("\n*** KERNEL EXCEPTION ***\n");
     kprintf("Exception: %s\n", exception_names[regs->int_no]);

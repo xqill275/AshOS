@@ -83,12 +83,12 @@ void vmm_init(void)
      * virtual address == physical address for 0x0 to 0x400000.
      * This keeps the kernel working after paging is enabled.
      */
-    page_directory[0] = (uint32_t)page_tables[0] | PAGE_PRESENT | PAGE_WRITABLE;
-    page_directory[1] = (uint32_t)page_tables[1] | PAGE_PRESENT | PAGE_WRITABLE;
+    page_directory[0] = (uint32_t)page_tables[0] | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
+    page_directory[1] = (uint32_t)page_tables[1] | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
 
     for (int i = 0; i < 1024; i++) {
-        page_tables[0][i] = (i * 4096) | PAGE_PRESENT | PAGE_WRITABLE;
-        page_tables[1][i] = ((1024 + i) * 4096) | PAGE_PRESENT | PAGE_WRITABLE;
+        page_tables[0][i] = (i * 4096) | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
+        page_tables[1][i] = ((1024 + i) * 4096) | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
     }
 
     /*

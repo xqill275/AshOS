@@ -64,6 +64,14 @@ ISR_NOERRCODE 29
 ISR_ERRCODE   30
 ISR_NOERRCODE 31
 
+/* system call interrupt */
+.global isr128
+isr128:
+    cli
+    push $0
+    push $128
+    jmp isr_common
+
 /* Hardware IRQs mapped to interrupts 32-47 */
 IRQ  0, 32
 IRQ  1, 33

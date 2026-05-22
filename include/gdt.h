@@ -19,6 +19,8 @@ typedef struct {
     uint32_t base;         /* address of first entry */
 } __attribute__((packed)) gdt_descriptor_t;
 
+
+void gdt_set_tss(uint32_t base, uint32_t limit);
 void gdt_init(void);
 
 #endif

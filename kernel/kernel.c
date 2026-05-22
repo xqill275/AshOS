@@ -12,6 +12,9 @@
 #include "../include/process.h"
 #include "../include/ata.h"
 #include "../include/fs.h"
+#include "../include/syscall.h"
+#include "../include/tss.h"
+#include "../include/usermode.h"
 
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
@@ -21,6 +24,7 @@
 #error "This kernel needs to be compiled with an ix86-elf compiler"
 #endif
 
+extern void user_program(void);
 
 /* ============================================================
    Multiboot
@@ -214,6 +218,8 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     process_init();
     ata_init();
     fs_init();
+    syscall_init();
+    tss_init(0x200000); /* kernel stack at 2MB */
     keyboard_init();
     //__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)0xFE), "Nd"((uint16_t)0x21));
 
@@ -234,6 +240,14 @@ void kernel_main(uint32_t magic, multiboot_info_t* mb_info)
     kprintf("\nHello, kernel world!\n");
 
     shell_init();
+     
+
+    /* allocate a user stack */
+    uint32_t user_stack = (uint32_t)kmalloc(4096) + 4096;
+
+    /* enter usermode and run the test program */
+    enter_usermode((uint32_t)user_program, user_stack);
+
 
     /* keep kernel alive for interrupts */
     while (1) __asm__ volatile ("hlt");

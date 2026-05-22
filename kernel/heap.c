@@ -39,7 +39,7 @@ static void heap_map_pages(uint32_t virt_start, uint32_t size)
             kprintf("heap: out of physical memory!\n");
             return;
         }
-        vmm_map(virt_start + i * 4096, phys, 0x3); /* present + writable */
+        vmm_map(virt_start + i * 4096, phys, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER);
     }
 }
 
