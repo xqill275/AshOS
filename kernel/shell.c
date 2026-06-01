@@ -4,6 +4,9 @@
 #include "../include/process.h"
 #include "../include/fs.h"
 #include "../include/heap.h"
+#include "../include/elf.h"
+#include "../include/usermode.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -57,6 +60,7 @@ static void cmd_help(void)
     kprintf("  write <file>  - write to a file\n");
     kprintf("  cat <file>    - read a file\n");
     kprintf("  rm <file>     - delete a file\n");
+    kprintf("  run <file>    - run an ELF program\n");
 }
 
 static void cmd_clear(void)
@@ -165,6 +169,24 @@ static void cmd_rm(const char* args)
     fs_delete(args);
 }
 
+static void cmd_run(const char* args)
+{
+    if (args[0] == 0) {
+        kprintf("Usage: run <filename>\n");
+        return;
+    }
+
+    uint32_t entry = 0;
+    if (elf_load(args, &entry) < 0) {
+        kprintf("Failed to load '%s'\n", args);
+        return;
+    }
+
+    /* allocate user stack */
+    uint32_t user_stack = (uint32_t)kmalloc(4096) + 4096;
+    enter_usermode(entry, user_stack);
+}
+
 /* ============================================================
    Command processing
    ============================================================ */
@@ -200,6 +222,8 @@ static void shell_execute(void)
         cmd_cat(buffer + 4);
     } else if (strncmp(buffer, "rm ", 3) == 0) {
         cmd_rm(buffer + 3);
+    } else if (strncmp(buffer, "run ", 4) == 0) {
+    cmd_run(buffer + 4);
     } else {
         terminal_setcolor(0x04); /* red */
         kprintf("Unknown command: %s\n", buffer);

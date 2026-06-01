@@ -6,7 +6,7 @@
 
 #define FS_MAGIC        0xA5H05     /* AshFS magic number */
 #define MAX_FILES       32          /* max files on disk */
-#define MAX_FILE_BLOCKS 8           /* max data blocks per file */
+#define MAX_FILE_BLOCKS 32           /* max data blocks per file */
 #define BLOCK_SIZE      512         /* one sector per block */
 #define MAX_FILENAME    64          /* max filename length */
 

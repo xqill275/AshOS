@@ -103,5 +103,9 @@ void vmm_init(void)
         : : "r"(page_directory) : "eax"
     );
 
+    /* map user stack area at 0x500000 */
+    uint32_t stack_phys = (uint32_t)pmm_alloc();
+    vmm_map(0x500000, stack_phys, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER);
+
     kprintf("VMM: paging enabled, first 4MB identity mapped\n");
 }
