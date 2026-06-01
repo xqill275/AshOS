@@ -5,6 +5,14 @@
 
 #define KERNEL_STACK_SIZE 4096
 #define MAX_PROCESSES     16
+#define MAX_FD 16
+
+typedef struct {
+    uint8_t  used;
+    char     name[64];
+    uint32_t position;
+    uint32_t size;
+} file_descriptor_t;
 
 typedef enum {
     PROCESS_RUNNING,
@@ -18,6 +26,7 @@ typedef struct process {
     uint32_t*       page_dir;  /* page directory */
     uint8_t*        stack;     /* kernel stack */
     process_state_t state;
+    file_descriptor_t fds[MAX_FD];
     struct process* next;      /* next process in list */
 } process_t;
 

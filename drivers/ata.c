@@ -69,6 +69,7 @@ void ata_init(void)
 
 void ata_read_sector(uint32_t lba, uint8_t* buf)
 {
+    ata_reset();
     ata_wait();
 
     /* set up LBA addressing */
@@ -107,5 +108,14 @@ void ata_write_sector(uint32_t lba, uint8_t* buf)
 
     /* flush write cache */
     outb(ATA_COMMAND, 0xE7);
+    ata_wait();
+}
+
+void ata_reset(void)
+{
+    outb(ATA_DRIVE_HEAD, 0xA0);
+    /* wait */
+    for (int i = 0; i < 10000; i++)
+        __asm__ volatile ("nop");
     ata_wait();
 }

@@ -1,10 +1,28 @@
 #include "../include/kprintf.h"
+#include "../include/serial.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
 
 extern void terminal_putchar(char c);
 extern void terminal_writestring(const char* str);
+
+/* write a single character to both terminal and serial */
+static void put(char c)
+{
+    terminal_putchar(c);
+    serial_putchar(c);
+}
+
+/* write a string to both terminal and serial */
+static void puts(const char* s)
+{
+    while (*s) {
+        terminal_putchar(*s);
+        serial_putchar(*s);
+        s++;
+    }
+}
 
 static void print_uint(uint32_t n, uint32_t base)
 {
@@ -13,7 +31,7 @@ static void print_uint(uint32_t n, uint32_t base)
     int i = 0;
 
     if (n == 0) {
-        terminal_putchar('0');
+        put('0');
         return;
     }
 
@@ -22,15 +40,14 @@ static void print_uint(uint32_t n, uint32_t base)
         n /= base;
     }
 
-    /* digits are in reverse order */
     while (i-- > 0)
-        terminal_putchar(buf[i]);
+        put(buf[i]);
 }
 
 static void print_int(int32_t n)
 {
     if (n < 0) {
-        terminal_putchar('-');
+        put('-');
         print_uint((uint32_t)(-n), 10);
     } else {
         print_uint((uint32_t)n, 10);
@@ -44,7 +61,7 @@ void kprintf(const char* fmt, ...)
 
     while (*fmt) {
         if (*fmt != '%') {
-            terminal_putchar(*fmt++);
+            put(*fmt++);
             continue;
         }
 
@@ -58,23 +75,23 @@ void kprintf(const char* fmt, ...)
                 print_uint(va_arg(args, uint32_t), 10);
                 break;
             case 'x':
-                terminal_writestring("0x");
+                puts("0x");
                 print_uint(va_arg(args, uint32_t), 16);
                 break;
             case 's': {
                 const char* s = va_arg(args, const char*);
-                terminal_writestring(s ? s : "(null)");
+                puts(s ? s : "(null)");
                 break;
             }
             case 'c':
-                terminal_putchar((char)va_arg(args, int));
+                put((char)va_arg(args, int));
                 break;
             case '%':
-                terminal_putchar('%');
+                put('%');
                 break;
             default:
-                terminal_putchar('%');
-                terminal_putchar(*fmt);
+                put('%');
+                put(*fmt);
                 break;
         }
         fmt++;

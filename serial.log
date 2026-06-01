@@ -1,0 +1,32 @@
+PMM: 32736 pages total, 527 used by kernel, 32209 free
+VMM: paging enabled, first 4MB identity mapped
+Heap: initialised at 0x1000000, size 1024 KB
+Process: kernel process created (PID 0)
+ATA: initialised primary bus
+FS: AshFS found, version 1, 1006 free blocks
+Syscall: int 0x80 handler installed
+TSS: initialised, kernel stack at 0x200000
+=== AshOS ===
+Booted successfully via GRUB.
+
+Lower memory: 639 KB
+Upper memory: 129920 KB
+
+Hello, kernel world!
+AshOS> 
+
+Files on AshFS:
+Name                             Size
+----                             ----
+  hello.elf (4428 bytes)
+  readfile.elf (4560 bytes)
+AshOS> 
+FS: created 'notes.txt'
+AshOS> 
+FS: wrote 13 bytes to 'notes.txt'
+AshOS> 
+ELF: loading 'readfile.elf', entry at 0x400000
+ELF: segment 0: vaddr=0x400000 size=276
+ELF: loaded successfully
+Entering ring 3 at 0x0x400000
+[PID 0 exited with code 0]

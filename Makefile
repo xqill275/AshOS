@@ -31,9 +31,10 @@ OBJS = $(BUILD_DIR)/boot.o \
        $(BUILD_DIR)/tss.o \
        $(BUILD_DIR)/usermode.o \
        $(BUILD_DIR)/usertest.o \
-       $(BUILD_DIR)/elf.o
+       $(BUILD_DIR)/elf.o \
+       $(BUILD_DIR)/serial.o
 
-USER_PROGRAMS = $(BUILD_DIR)/hello.elf
+USER_PROGRAMS = $(BUILD_DIR)/hello.elf $(BUILD_DIR)/readfile.elf
 
 # ============================================================
 # Main targets
@@ -112,6 +113,9 @@ $(BUILD_DIR)/keyboard.o: $(DRIVERS_DIR)/keyboard.c
 $(BUILD_DIR)/ata.o: $(DRIVERS_DIR)/ata.c
 	$(CC) $(CFLAGS) -c $(DRIVERS_DIR)/ata.c -o $(BUILD_DIR)/ata.o
 
+$(BUILD_DIR)/serial.o: $(DRIVERS_DIR)/serial.c
+	$(CC) $(CFLAGS) -c $(DRIVERS_DIR)/serial.c -o $(BUILD_DIR)/serial.o
+
 # ============================================================
 # User programs (compiled as standalone ELF binaries)
 # ============================================================
@@ -126,6 +130,12 @@ $(BUILD_DIR)/hello.elf: $(USER_DIR)/hello.c $(USER_DIR)/libash.h $(USER_DIR)/use
 		-ffunction-sections \
 		-T $(USER_DIR)/user.ld \
 		$(USER_DIR)/hello.c -o $(BUILD_DIR)/hello.elf
+
+$(BUILD_DIR)/readfile.elf: $(USER_DIR)/readfile.c $(USER_DIR)/libash.h $(USER_DIR)/user.ld
+	$(CC) -std=gnu99 -ffreestanding -nostdlib -O2 -s \
+		-fno-stack-protector -fno-builtin -ffunction-sections \
+		-T $(USER_DIR)/user.ld \
+		$(USER_DIR)/readfile.c -o $(BUILD_DIR)/readfile.elf
 
 user: $(BUILD_DIR) $(USER_PROGRAMS)
 
@@ -159,7 +169,9 @@ install: $(TOOLS_DIR)/mkdisk $(BUILD_DIR)/hello.elf disk.img
 # ============================================================
 
 run: $(TARGET)
-	qemu-system-i386 -kernel $(TARGET) -drive file=disk.img,format=raw,index=0,media=disk
+	qemu-system-i386 -kernel $(TARGET) \
+		-drive file=disk.img,format=raw,index=0,media=disk \
+		-serial file:serial.log
 
 clean:
 	rm -rf $(BUILD_DIR)

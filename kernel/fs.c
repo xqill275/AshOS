@@ -17,7 +17,6 @@ extern void kprintf(const char* fmt, ...);
 #define INODES_PER_SECTOR  (512 / sizeof(inode_t))
 
 static superblock_t superblock;
-static uint8_t sector_buf[512];
 
 /* ============================================================
    String helpers (no stdlib)
@@ -55,37 +54,28 @@ static void fs_memcpy(void* dst, const void* src, size_t size)
 }
 
 /* ============================================================
-   Inode helpers
+   Inode helpers — each uses its own local buffer
    ============================================================ */
 
-/*
- * Read inode at index from disk.
- */
 static void inode_read(uint32_t index, inode_t* inode)
 {
+    uint8_t buf[512];
     uint32_t sector = INODE_START_SECTOR + (index / INODES_PER_SECTOR);
     uint32_t offset = index % INODES_PER_SECTOR;
-
-    ata_read_sector(sector, sector_buf);
-    fs_memcpy(inode, sector_buf + offset * sizeof(inode_t), sizeof(inode_t));
+    ata_read_sector(sector, buf);
+    fs_memcpy(inode, buf + offset * sizeof(inode_t), sizeof(inode_t));
 }
 
-/*
- * Write inode at index to disk.
- */
 static void inode_write(uint32_t index, inode_t* inode)
 {
+    uint8_t buf[512];
     uint32_t sector = INODE_START_SECTOR + (index / INODES_PER_SECTOR);
     uint32_t offset = index % INODES_PER_SECTOR;
-
-    ata_read_sector(sector, sector_buf);
-    fs_memcpy(sector_buf + offset * sizeof(inode_t), inode, sizeof(inode_t));
-    ata_write_sector(sector, sector_buf);
+    ata_read_sector(sector, buf);
+    fs_memcpy(buf + offset * sizeof(inode_t), inode, sizeof(inode_t));
+    ata_write_sector(sector, buf);
 }
 
-/*
- * Find inode by name. Returns index or -1 if not found.
- */
 static int inode_find(const char* name)
 {
     inode_t inode;
@@ -97,9 +87,6 @@ static int inode_find(const char* name)
     return -1;
 }
 
-/*
- * Find a free inode slot. Returns index or -1 if full.
- */
 static int inode_alloc(void)
 {
     inode_t inode;
@@ -111,18 +98,13 @@ static int inode_alloc(void)
     return -1;
 }
 
-/*
- * Allocate a free data block. Returns block number or 0 if full.
- */
 static uint32_t block_alloc(void)
 {
     if (superblock.free_blocks == 0) return 0;
 
-    /* simple linear scan for a free block */
-    /* in a real fs we'd use a bitmap */
     inode_t inode;
-    uint8_t used[superblock.total_blocks];
-    fs_memset(used, 0, superblock.total_blocks);
+    uint8_t used[1024];
+    fs_memset(used, 0, sizeof(used));
 
     /* mark all used blocks */
     for (uint32_t i = 0; i < MAX_FILES; i++) {
@@ -151,31 +133,28 @@ static uint32_t block_alloc(void)
 
 void fs_init(void)
 {
-    /* read superblock */
-    ata_read_sector(SUPERBLOCK_SECTOR, sector_buf);
-    fs_memcpy(&superblock, sector_buf, sizeof(superblock_t));
+    uint8_t buf[512];
+    ata_read_sector(SUPERBLOCK_SECTOR, buf);
+    fs_memcpy(&superblock, buf, sizeof(superblock_t));
 
     if (superblock.magic != 0xA5075) {
-        /* no filesystem found - format the disk */
         kprintf("FS: no AshFS found, formatting...\n");
 
         fs_memset(&superblock, 0, sizeof(superblock_t));
         superblock.magic        = 0xA5075;
         superblock.version      = 1;
-        superblock.total_blocks = 1024; /* 512KB of data space */
+        superblock.total_blocks = 1024;
         superblock.inode_start  = INODE_START_SECTOR;
         superblock.data_start   = DATA_START_SECTOR;
         superblock.free_blocks  = 1024;
 
-        /* write superblock */
-        fs_memset(sector_buf, 0, 512);
-        fs_memcpy(sector_buf, &superblock, sizeof(superblock_t));
-        ata_write_sector(SUPERBLOCK_SECTOR, sector_buf);
+        fs_memset(buf, 0, 512);
+        fs_memcpy(buf, &superblock, sizeof(superblock_t));
+        ata_write_sector(SUPERBLOCK_SECTOR, buf);
 
-        /* zero out inode table */
-        fs_memset(sector_buf, 0, 512);
+        fs_memset(buf, 0, 512);
         for (uint32_t i = 0; i < 32; i++)
-            ata_write_sector(INODE_START_SECTOR + i, sector_buf);
+            ata_write_sector(INODE_START_SECTOR + i, buf);
 
         kprintf("FS: AshFS formatted successfully\n");
     } else {
@@ -225,7 +204,6 @@ int fs_write(const char* name, const uint8_t* data, uint32_t size)
         return -1;
     }
 
-    /* allocate blocks and write data */
     uint32_t written = 0;
     for (uint32_t i = 0; i < blocks_needed; i++) {
         uint32_t block = block_alloc();
@@ -236,12 +214,12 @@ int fs_write(const char* name, const uint8_t* data, uint32_t size)
 
         inode.blocks[i] = block;
 
-        /* copy data into sector buffer */
-        fs_memset(sector_buf, 0, 512);
+        uint8_t buf[512];
+        fs_memset(buf, 0, 512);
         uint32_t to_write = size - written;
         if (to_write > BLOCK_SIZE) to_write = BLOCK_SIZE;
-        fs_memcpy(sector_buf, data + written, to_write);
-        ata_write_sector(block, sector_buf);
+        fs_memcpy(buf, data + written, to_write);
+        ata_write_sector(block, buf);
         written += to_write;
     }
 
@@ -249,9 +227,10 @@ int fs_write(const char* name, const uint8_t* data, uint32_t size)
     inode_write((uint32_t)index, &inode);
 
     /* update superblock */
-    fs_memset(sector_buf, 0, 512);
-    fs_memcpy(sector_buf, &superblock, sizeof(superblock_t));
-    ata_write_sector(SUPERBLOCK_SECTOR, sector_buf);
+    uint8_t buf[512];
+    fs_memset(buf, 0, 512);
+    fs_memcpy(buf, &superblock, sizeof(superblock_t));
+    ata_write_sector(SUPERBLOCK_SECTOR, buf);
 
     kprintf("FS: wrote %d bytes to '%s'\n", size, name);
     return 0;
@@ -274,10 +253,11 @@ int fs_read(const char* name, uint8_t* buf, uint32_t size)
     for (int i = 0; i < MAX_FILE_BLOCKS && read < to_read; i++) {
         if (!inode.blocks[i]) break;
 
-        ata_read_sector(inode.blocks[i], sector_buf);
+        uint8_t data_buf[512];
+        ata_read_sector(inode.blocks[i], data_buf);
         uint32_t chunk = to_read - read;
         if (chunk > BLOCK_SIZE) chunk = BLOCK_SIZE;
-        fs_memcpy(buf + read, sector_buf, chunk);
+        fs_memcpy(buf + read, data_buf, chunk);
         read += chunk;
     }
 
@@ -295,7 +275,6 @@ int fs_delete(const char* name)
     inode_t inode;
     inode_read((uint32_t)index, &inode);
 
-    /* free blocks */
     for (int i = 0; i < MAX_FILE_BLOCKS; i++) {
         if (inode.blocks[i]) {
             superblock.free_blocks++;
@@ -306,10 +285,10 @@ int fs_delete(const char* name)
     inode.used = 0;
     inode_write((uint32_t)index, &inode);
 
-    /* update superblock */
-    fs_memset(sector_buf, 0, 512);
-    fs_memcpy(sector_buf, &superblock, sizeof(superblock_t));
-    ata_write_sector(SUPERBLOCK_SECTOR, sector_buf);
+    uint8_t buf[512];
+    fs_memset(buf, 0, 512);
+    fs_memcpy(buf, &superblock, sizeof(superblock_t));
+    ata_write_sector(SUPERBLOCK_SECTOR, buf);
 
     kprintf("FS: deleted '%s'\n", name);
     return 0;

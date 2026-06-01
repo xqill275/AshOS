@@ -37,7 +37,12 @@ void process_init(void)
     kernel_proc->stack     = 0; /* kernel already has a stack */
     kernel_proc->page_dir  = 0; /* kernel uses current page dir */
     kernel_proc->esp       = 0;
-
+    for (int i = 0; i < MAX_FD; i++) {
+        kernel_proc->fds[i].used = 0;
+    }
+    kernel_proc->fds[0].used = 1;
+    kernel_proc->fds[1].used = 1;
+    kernel_proc->fds[2].used= 1;
     process_list    = kernel_proc;
     current_process = kernel_proc;
 
@@ -61,6 +66,13 @@ process_t* process_create(void (*entry)(void))
     proc->state    = PROCESS_READY;
     proc->page_dir = 0;
     proc->next     = 0;
+
+    /* initialise file descriptors */
+    for (int i = 0; i < MAX_FD; i++)
+        proc->fds[i].used = 0;
+    proc->fds[0].used = 1; /* stdin */
+    proc->fds[1].used = 1; /* stdout */
+    proc->fds[2].used = 1; /* stderr */
 
     /*
      * Set up the initial stack so context_switch can restore it.
